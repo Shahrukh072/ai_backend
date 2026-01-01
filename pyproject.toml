@@ -1,0 +1,79 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-doc-saas"
+version = "1.0.0"
+description = "AI-powered document processing and chat service"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
+keywords = ["fastapi", "ai", "document", "saas", "langchain", "openai"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.14",
+    "Framework :: FastAPI",
+]
+
+dependencies = [
+    "fastapi==0.104.1",
+    "uvicorn[standard]==0.24.0",
+    "sqlalchemy>=2.0.36",
+    "psycopg[binary]>=3.1.0",
+    "pydantic>=2.9.0",
+    "pydantic-settings==2.1.0",
+    "email-validator>=2.0.0",
+    "python-jose[cryptography]==3.3.0",
+    "passlib[bcrypt]==1.7.4",
+    "python-multipart==0.0.6",
+    "openai>=1.54.0",
+    "langchain>=0.2.0",
+    "langchain-core>=0.2.0",
+    "langchain-openai>=0.1.0",
+    "faiss-cpu==1.13.2",
+    "numpy>=1.24.0,<2.0.0",
+    "PyPDF2==3.0.1",
+    "python-docx==1.1.0",
+    "aiofiles==23.2.1",
+    "alembic==1.12.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/ai-doc-saas"
+Documentation = "https://github.com/yourusername/ai-doc-saas#readme"
+Repository = "https://github.com/yourusername/ai-doc-saas"
+Issues = "https://github.com/yourusername/ai-doc-saas/issues"
+
+[tool.setuptools]
+packages = ["app"]
+
+[tool.black]
+line-length = 100
+target-version = ['py310', 'py311', 'py312', 'py314']
+include = '\.pyi?$'
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+

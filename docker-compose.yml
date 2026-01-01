@@ -1,0 +1,36 @@
+services:
+  # Database service (optional - comment out if using local PostgreSQL)
+  # Uncomment this section once Docker Hub authentication is resolved
+  # db:
+  #   image: postgres:15
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: root
+  #     POSTGRES_DB: ai_backend
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    # Connect to host PostgreSQL (use host.docker.internal on Mac/Windows)
+    # For Linux, use: extra_hosts: ["host.docker.internal:host-gateway"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:root@host.docker.internal:5432/ai_backend
+      SECRET_KEY: ${SECRET_KEY:-dmANvXXGHE4_JNwYI0sI7NLMCbxQpsv-H6ip5sEP1to}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    volumes:
+      - ./uploads:/app/uploads
+      - ./vector_store:/app/vector_store
+    # Uncomment if using Docker database:
+    # depends_on:
+    #   - db
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+# volumes:
+#   postgres_data:
+
