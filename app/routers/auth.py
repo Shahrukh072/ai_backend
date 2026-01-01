@@ -93,4 +93,3 @@ async def debug_token(authorization: str = Header(None)):
         }
     except Exception as e:
         return {"error": f"Failed to decode token: {str(e)}", "exception_type": type(e).__name__}
-
