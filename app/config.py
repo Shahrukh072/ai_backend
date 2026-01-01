@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000"]
     
     # OpenAI
-    OPENAI_API_KEY: str = ""
+    OPENAI_API_KEY: Optional[str] = None
     OPENAI_MODEL: str = "gpt-3.5-turbo"
     
     # Embedding

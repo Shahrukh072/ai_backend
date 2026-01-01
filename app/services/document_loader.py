@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from fastapi import UploadFile, HTTPException, status
+from typing import Optional
 from app.models.document import Document
 from app.services.embedding_service import EmbeddingService
 from app.services.faiss_service import FAISSService
@@ -19,10 +20,11 @@ class DocumentLoaderService:
     async def upload_and_process(self, file: UploadFile, user_id: int) -> Document:
         """Upload file, extract text, create embeddings, and store in vector DB"""
         # Validate file
-        if not self._validate_file(file):
+        validation_error = self._validate_file(file)
+        if validation_error:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid file type or size"
+                detail=validation_error
             )
         
         # Save file
@@ -63,19 +65,22 @@ class DocumentLoaderService:
                 detail=f"Error processing document: {str(e)}"
             )
     
-    def _validate_file(self, file: UploadFile) -> bool:
-        """Validate uploaded file"""
+    def _validate_file(self, file: UploadFile) -> Optional[str]:
+        """Validate uploaded file. Returns error message if invalid, None if valid."""
         if not file.filename:
-            return False
+            return "No filename provided"
         
         # Check file extension
         ext = os.path.splitext(file.filename)[1].lower()
         if ext not in settings.ALLOWED_EXTENSIONS:
-            return False
+            allowed = ", ".join(settings.ALLOWED_EXTENSIONS)
+            return f"Invalid file type. Allowed types: {allowed}. Received: {ext or 'unknown'}"
         
         # Check file size (if available)
         if file.size and file.size > settings.MAX_FILE_SIZE:
-            return False
+            max_size_mb = settings.MAX_FILE_SIZE / (1024 * 1024)
+            file_size_mb = file.size / (1024 * 1024)
+            return f"File size ({file_size_mb:.2f} MB) exceeds maximum allowed size ({max_size_mb} MB)"
         
-        return True
+        return None
 

@@ -1,20 +1,28 @@
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+from jose.exceptions import ExpiredSignatureError, JWTClaimsError
+import bcrypt
 from app.config import settings
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against a hash"""
-    return pwd_context.verify(plain_password, hashed_password)
+    return bcrypt.checkpw(
+        plain_password.encode('utf-8'),
+        hashed_password.encode('utf-8')
+    )
 
 
 def get_password_hash(password: str) -> str:
     """Hash a password"""
-    return pwd_context.hash(password)
+    # Encode password to bytes
+    password_bytes = password.encode('utf-8')
+    # Generate salt and hash password
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password_bytes, salt)
+    # Return as string
+    return hashed.decode('utf-8')
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
@@ -32,9 +40,34 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 def verify_token(token: str) -> Optional[dict]:
     """Verify and decode a JWT token"""
+    if not token:
+        return None
+    
+    # Strip any whitespace
+    token = token.strip()
+    
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(
+            token, 
+            settings.SECRET_KEY, 
+            algorithms=[settings.ALGORITHM],
+            options={"verify_signature": True, "verify_exp": True}
+        )
         return payload
-    except JWTError:
+    except ExpiredSignatureError as e:
+        # Token has expired
+        print(f"[TOKEN VERIFY] Token expired: {e}")
+        return None
+    except JWTClaimsError as e:
+        # Invalid token claims
+        print(f"[TOKEN VERIFY] JWT claims error: {e}")
+        return None
+    except JWTError as e:
+        # Other JWT errors (including signature verification failures)
+        print(f"[TOKEN VERIFY] JWT error: {type(e).__name__}: {e}")
+        return None
+    except Exception as e:
+        # Any other unexpected errors
+        print(f"[TOKEN VERIFY] Unexpected error: {type(e).__name__}: {e}")
         return None
 

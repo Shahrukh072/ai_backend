@@ -45,6 +45,7 @@ class AuthService:
         if not user.is_active:
             return None
         
-        access_token = create_access_token(data={"sub": user.id})
+        # Convert user.id to string for JWT sub claim
+        access_token = create_access_token(data={"sub": str(user.id)})
         return {"access_token": access_token, "token_type": "bearer"}
 
