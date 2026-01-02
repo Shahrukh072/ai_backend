@@ -4,9 +4,9 @@ from app.config import settings
 from app.routers import auth, documents, chat
 
 app = FastAPI(
-    title="AI Document SaaS",
-    description="AI-powered document processing and chat service",
-    version="1.0.0"
+    title="AI Backend - Production LLM/GenAI Platform",
+    description="Production-grade AI backend with LangChain, LangGraph, RAG, and agentic workflows",
+    version="2.0.0"
 )
 
 # CORS middleware
