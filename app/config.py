@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from pydantic import model_validator
 from typing import List, Literal, Optional
 from enum import Enum
 
@@ -17,10 +18,19 @@ class Settings(BaseSettings):
     # Security
     SECRET_KEY: str = "dmANvXXGHE4_JNwYI0sI7NLMCbxQpsv-H6ip5sEP1to"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 43200  # 30 days (30 * 24 * 60)
     
     # CORS
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000"]
+    
+    # Environment
+    ENV: str = "development"
+    
+    # Google OAuth Configuration
+    GOOGLE_OAUTH_CLIENT_ID: Optional[str] = None
+    GOOGLE_OAUTH_CLIENT_SECRET: Optional[str] = None
+    GOOGLE_OAUTH_REDIRECT_URI: Optional[str] = None
+    APP_BASE_URL: Optional[str] = None  # Base URL for constructing redirect URI
     
     # LLM Provider Selection
     LLM_PROVIDER: LLMProvider = LLMProvider.OPENAI
@@ -93,6 +103,23 @@ class Settings(BaseSettings):
     # Testing & Evaluation
     LLM_EVAL_ENABLED: bool = True
     LLM_EVAL_MODEL: str = "gpt-4o-mini"
+    
+    @model_validator(mode='after')
+    def validate_redirect_uri(self):
+        """Validate and set GOOGLE_OAUTH_REDIRECT_URI based on ENV and APP_BASE_URL"""
+        if not self.GOOGLE_OAUTH_REDIRECT_URI or not self.GOOGLE_OAUTH_REDIRECT_URI.strip():
+            if self.APP_BASE_URL:
+                self.GOOGLE_OAUTH_REDIRECT_URI = f"{self.APP_BASE_URL.rstrip('/')}/api/auth/google/callback"
+            else:
+                # Only allow localhost in development
+                if self.ENV == "development":
+                    self.GOOGLE_OAUTH_REDIRECT_URI = "http://localhost:3000/api/auth/google/callback"
+                else:
+                    raise ValueError(
+                        "GOOGLE_OAUTH_REDIRECT_URI must be set in production. "
+                        "Set it via environment variable or APP_BASE_URL."
+                    )
+        return self
     
     class Config:
         env_file = ".env"

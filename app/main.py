@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.routers import auth, documents, chat
+from app.api.routes import auth, rag, chat, health
 
 app = FastAPI(
     title="AI Backend - Production LLM/GenAI Platform",
@@ -19,17 +19,8 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(health.router, tags=["health"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
-app.include_router(documents.router, prefix="/api/documents", tags=["documents"])
+app.include_router(rag.router, prefix="/api/rag", tags=["rag"])
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
-
-
-@app.get("/")
-async def root():
-    return {"message": "AI Document SaaS API"}
-
-
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
 

@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from app.models.user import User
 from app.schemas.user import UserCreate
-from app.utils.security import get_password_hash, create_access_token
+from app.core.security import get_password_hash, create_access_token
 
 
 class AuthService:
@@ -24,7 +24,8 @@ class AuthService:
         user = User(
             email=user_data.email,
             hashed_password=hashed_password,
-            full_name=user_data.full_name
+            full_name=user_data.full_name,
+            provider="email"
         )
         self.db.add(user)
         self.db.commit()
@@ -33,16 +34,22 @@ class AuthService:
     
     def authenticate_user(self, email: str, password: str) -> dict | None:
         """Authenticate user and return token"""
-        from app.utils.security import verify_password
+        from app.core.security import verify_password
         
         user = self.db.query(User).filter(User.email == email).first()
         if not user:
             return None
         
-        if not verify_password(password, user.hashed_password):
+        # Check if user is active
+        if not user.is_active:
             return None
         
-        if not user.is_active:
+        # OAuth users (Google) don't have passwords - they must use OAuth login
+        if user.provider == "google" or not user.hashed_password:
+            return None
+        
+        # Verify password for email-based users
+        if not verify_password(password, user.hashed_password):
             return None
         
         # Convert user.id to string for JWT sub claim

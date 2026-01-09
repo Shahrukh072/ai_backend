@@ -1,6 +1,6 @@
 """LLM evaluation tests using langsmith"""
 import pytest
-from app.services.llm_service import LLMService
+from app.ai.llm import LLMService
 from langchain_core.messages import HumanMessage, SystemMessage
 
 

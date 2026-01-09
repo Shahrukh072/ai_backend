@@ -1,9 +1,9 @@
 from sqlalchemy.orm import Session
 from app.models.chat import Chat
 from app.models.document import Document
-from app.services.embedding_service import EmbeddingService
-from app.services.faiss_service import FAISSService
-from app.services.llm_service import LLMService
+from app.ai.embeddings import EmbeddingService
+from app.vectorstore.faiss_store import FAISSService
+from app.ai.llm import LLMService
 from typing import Optional
 
 
@@ -35,7 +35,12 @@ class RAGService:
             context = await self._get_relevant_context(question, document_id)
             
             # Generate answer using LLM
-            answer = await self.llm_service.generate_answer(question, context)
+            from langchain_core.messages import HumanMessage, SystemMessage
+            messages = [
+                SystemMessage(content=f"Answer the question based on the context:\n{context}"),
+                HumanMessage(content=question)
+            ]
+            answer = await self.llm_service.generate(messages)
             
             # Update chat with answer
             chat.answer = answer
@@ -66,4 +71,3 @@ class RAGService:
         # Combine results into context
         context = "\n\n".join([result["text"] for result in results])
         return context
-

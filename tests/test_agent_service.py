@@ -1,6 +1,6 @@
 """Tests for agent service"""
 import pytest
-from app.services.agent_service import AgentService, AgentState
+from app.ai.agents import AgentService, AgentState
 from langchain_core.messages import HumanMessage
 
 

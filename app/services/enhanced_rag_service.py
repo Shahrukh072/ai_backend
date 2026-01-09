@@ -37,7 +37,7 @@ except ImportError:
     except ImportError:
         pass
 from langchain_core.documents import Document
-from app.services.llm_service import LLMService
+from app.ai.llm import LLMService
 from app.config import settings, LLMProvider
 import os
 import pickle

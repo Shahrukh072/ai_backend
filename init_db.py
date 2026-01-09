@@ -2,7 +2,8 @@
 Database initialization script
 Creates all database tables from models
 """
-from app.database import engine, Base
+from app.db.session import engine
+from app.db.base import Base
 # Import all models to register them with SQLAlchemy
 from app.models import User, Document, Chat
 

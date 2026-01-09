@@ -1,6 +1,7 @@
 """Pytest configuration and fixtures"""
 import pytest
-from app.database import SessionLocal, Base, engine
+from app.db.session import SessionLocal, engine
+from app.db.base import Base
 
 
 @pytest.fixture(scope="function")
@@ -17,7 +18,7 @@ def db_session():
 def test_user(db_session):
     """Create a test user"""
     from app.models.user import User
-    from app.utils.security import get_password_hash
+    from app.core.security import get_password_hash
     
     user = User(
         email="test@example.com",

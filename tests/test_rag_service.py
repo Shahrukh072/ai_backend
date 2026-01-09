@@ -1,6 +1,6 @@
 """Tests for RAG service"""
 import pytest
-from app.services.enhanced_rag_service import EnhancedRAGService
+from app.ai.rag import EnhancedRAGService
 from sqlalchemy.orm import Session
 
 
@@ -51,7 +51,7 @@ async def test_rag_retrieval(db_session: Session):
 @pytest.fixture
 def db_session():
     """Fixture for database session"""
-    from app.database import SessionLocal
+    from app.db.session import SessionLocal
     session = SessionLocal()
     yield session
     session.close()

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, SecretStr
 from typing import Optional
 from datetime import datetime
 
@@ -41,4 +41,13 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     user_id: Optional[int] = None
+
+
+class GoogleAuthRequest(BaseModel):
+    token: SecretStr
+    
+    class Config:
+        json_encoders = {
+            SecretStr: lambda v: v.get_secret_value() if v else None
+        }
 
