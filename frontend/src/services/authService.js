@@ -10,10 +10,10 @@ export const authService = {
     try {
       const response = await api.post('/api/auth/login', credentials);
       // TODO: Switch to HttpOnly cookies instead of localStorage for token storage
-      // For now, rely on server to set HttpOnly cookie and don't store in localStorage
-      // if (response.data.access_token) {
-      //   localStorage.setItem('token', response.data.access_token);
-      // }
+      // For now, store token in localStorage for API interceptor to use
+      if (response.data.access_token) {
+        localStorage.setItem('token', response.data.access_token);
+      }
       return response.data;
     } catch (error) {
       throw error;
@@ -24,10 +24,10 @@ export const authService = {
     try {
       const response = await api.post('/api/auth/google', { token: googleToken });
       // TODO: Switch to HttpOnly cookies instead of localStorage for token storage
-      // For now, rely on server to set HttpOnly cookie and don't store in localStorage
-      // if (response.data.access_token) {
-      //   localStorage.setItem('token', response.data.access_token);
-      // }
+      // For now, store token in localStorage for API interceptor to use
+      if (response.data.access_token) {
+        localStorage.setItem('token', response.data.access_token);
+      }
       return response.data;
     } catch (error) {
       throw error;
