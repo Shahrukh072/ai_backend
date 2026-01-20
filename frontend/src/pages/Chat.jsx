@@ -2,10 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { chatService } from '../services/chatService';
 import { documentService } from '../services/documentService';
-import { Send, LogOut, Upload, FileText } from 'lucide-react';
+import { Send, Upload, FileText, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-export default function Chat() {
+export default function Chat({ isSidebarOpen, setIsSidebarOpen }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -13,7 +13,7 @@ export default function Chat() {
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [streaming, setStreaming] = useState(false);
   const messagesEndRef = useRef(null);
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -100,18 +100,61 @@ export default function Chat() {
     }
   };
 
+  // Close sidebar when document is selected on mobile
+  const handleDocumentSelect = (doc) => {
+    setSelectedDocument(doc);
+    loadChats(doc.id);
+    if (window.innerWidth < 1024) {
+      setIsSidebarOpen(false);
+    }
+  };
+
+  const handleAllDocuments = () => {
+    setSelectedDocument(null);
+    loadChats(null);
+    if (window.innerWidth < 1024) {
+      setIsSidebarOpen(false);
+    }
+  };
+
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex flex-1 bg-gray-50 relative overflow-hidden">
+      {/* Mobile Overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
-        <div className="p-4 border-b border-gray-200">
-          <h1 className="text-xl font-bold text-gray-800">AI Chat</h1>
-          <p className="text-sm text-gray-600 mt-1">{user?.email}</p>
+      <div
+        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex flex-col transform transition-transform duration-300 ease-in-out ${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}
+      >
+        <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-gray-800">Documents</h2>
+            <p className="text-xs text-gray-600 mt-1 hidden lg:block">{user?.email}</p>
+          </div>
+          <button
+            onClick={() => setIsSidebarOpen(false)}
+            className="lg:hidden p-1 rounded-md text-gray-600 hover:bg-gray-100"
+            aria-label="Close sidebar"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4">
           <button
-            onClick={() => navigate('/upload')}
+            onClick={() => {
+              navigate('/upload');
+              if (window.innerWidth < 1024) {
+                setIsSidebarOpen(false);
+              }
+            }}
             className="w-full flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors mb-4"
           >
             <Upload className="h-4 w-4" />
@@ -122,10 +165,7 @@ export default function Chat() {
             <h2 className="text-sm font-semibold text-gray-700 mb-2">Documents</h2>
             <div className="space-y-2">
               <button
-                onClick={() => {
-                  setSelectedDocument(null);
-                  loadChats(null);
-                }}
+                onClick={handleAllDocuments}
                 className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                   !selectedDocument
                     ? 'bg-blue-100 text-blue-700'
@@ -137,45 +177,29 @@ export default function Chat() {
               {documents.map((doc) => (
                 <button
                   key={doc.id}
-                  onClick={() => {
-                    setSelectedDocument(doc);
-                    loadChats(doc.id);
-                  }}
+                  onClick={() => handleDocumentSelect(doc)}
                   className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 ${
                     selectedDocument?.id === doc.id
                       ? 'bg-blue-100 text-blue-700'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  <FileText className="h-4 w-4" />
+                  <FileText className="h-4 w-4 flex-shrink-0" />
                   <span className="truncate">{doc.title}</span>
                 </button>
               ))}
             </div>
           </div>
         </div>
-
-        <div className="p-4 border-t border-gray-200">
-          <button
-            onClick={() => {
-              logout();
-              navigate('/login');
-            }}
-            className="w-full flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-          >
-            <LogOut className="h-4 w-4" />
-            Logout
-          </button>
-        </div>
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col">
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+      <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
           {messages.length === 0 && (
-            <div className="text-center text-gray-500 mt-12">
-              <p className="text-lg">Start a conversation</p>
-              <p className="text-sm mt-2">
+            <div className="text-center text-gray-500 mt-8 sm:mt-12 px-4">
+              <p className="text-base sm:text-lg">Start a conversation</p>
+              <p className="text-xs sm:text-sm mt-2">
                 {selectedDocument
                   ? `Ask questions about "${selectedDocument.title}"`
                   : 'Ask me anything or select a document to chat about'}
@@ -189,7 +213,7 @@ export default function Chat() {
               className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-3xl rounded-lg px-4 py-2 ${
+                className={`max-w-[85%] sm:max-w-3xl rounded-lg px-3 sm:px-4 py-2 text-sm sm:text-base ${
                   message.type === 'user'
                     ? 'bg-blue-600 text-white'
                     : message.error
@@ -225,8 +249,8 @@ export default function Chat() {
         </div>
 
         {/* Input Area */}
-        <div className="border-t border-gray-200 bg-white p-4">
-          <div className="flex gap-2 max-w-4xl mx-auto">
+        <div className="border-t border-gray-200 bg-white p-3 sm:p-4">
+          <div className="flex gap-2 max-w-4xl mx-auto w-full">
             <input
               type="text"
               value={input}
@@ -234,15 +258,15 @@ export default function Chat() {
               onKeyPress={handleKeyPress}
               placeholder="Type your message..."
               disabled={loading}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+              className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
             />
             <button
               onClick={handleSend}
               disabled={loading || !input.trim()}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm sm:text-base"
             >
               <Send className="h-4 w-4" />
-              Send
+              <span className="hidden sm:inline">Send</span>
             </button>
           </div>
         </div>

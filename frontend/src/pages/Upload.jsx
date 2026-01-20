@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { documentService } from '../services/documentService';
-import { Upload as UploadIcon, FileText, Trash2, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Upload as UploadIcon, FileText, Trash2, CheckCircle } from 'lucide-react';
 
 export default function Upload() {
   const [file, setFile] = useState(null);
@@ -117,7 +117,7 @@ export default function Upload() {
   // Prevent blank screen on errors
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex-1 bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600 mb-4">Please log in to upload documents</p>
           <button
@@ -132,24 +132,18 @@ export default function Upload() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto p-6">
+    <div className="flex-1 bg-gray-50 overflow-y-auto">
+      <div className="max-w-6xl mx-auto p-4 sm:p-6">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate('/chat')}
-              className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5 text-gray-600" />
-            </button>
-            <h1 className="text-3xl font-bold text-gray-900">Document Management</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Document Management</h1>
           </div>
         </div>
 
         {/* Upload Section */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Upload Document</h2>
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">Upload Document</h2>
 
           {error && (
             <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
@@ -214,8 +208,8 @@ export default function Upload() {
         </div>
 
         {/* Documents List */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Your Documents</h2>
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">Your Documents</h2>
 
           {documents.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
@@ -230,16 +224,17 @@ export default function Upload() {
                   key={doc.id}
                   className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  <div className="flex items-center gap-4 flex-1">
-                    <FileText className="h-8 w-8 text-blue-600" />
-                    <div className="flex-1">
-                      <h3 className="font-medium text-gray-900">{doc.title}</h3>
-                      <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
+                  <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                    <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-gray-900 truncate text-sm sm:text-base">{doc.title}</h3>
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500 mt-1">
                         <span>{(doc.file_type || 'unknown').toUpperCase()}</span>
-                        <span>•</span>
+                        <span className="hidden sm:inline">•</span>
                         <span>{doc.file_size != null ? formatFileSize(doc.file_size) : '-'}</span>
-                        <span>•</span>
-                        <span>{doc.created_at ? formatDate(doc.created_at) : '-'}</span>
+                        <span className="hidden sm:inline">•</span>
+                        <span className="hidden sm:inline">{doc.created_at ? formatDate(doc.created_at) : '-'}</span>
+                        <span className="sm:hidden">{doc.created_at ? new Date(doc.created_at).toLocaleDateString() : '-'}</span>
                       </div>
                     </div>
                   </div>
