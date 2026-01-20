@@ -3,12 +3,13 @@ from typing import TypedDict, Annotated, List, Dict, Any, Optional
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, ToolMessage, SystemMessage
+import uuid
 from langchain_core.tools import BaseTool
 from app.ai.llm import LLMService
 from app.ai.rag import EnhancedRAGService
 from app.ai.tools import ToolService
 from app.services.guardrails_service import GuardrailsService
-from app.config import settings
+from app.config import settings, LLMProvider
 import operator
 import asyncio
 
@@ -154,14 +155,22 @@ class AgentService:
         
         state["iteration_count"] = state.get("iteration_count", 0) + 1
         
-        # Get tools if enabled
+        # Get tools if enabled (but not for Groq - it doesn't support function calling)
         tools = []
-        if settings.AGENT_ENABLE_TOOLS:
+        if settings.AGENT_ENABLE_TOOLS and self.llm_service.provider != LLMProvider.GROQ:
             tools = await self.tool_service.get_available_tools()
         
         # Generate response with or without tools
         if tools:
-            response = await self.llm_service.generate_with_tools(messages, tools)
+            try:
+                response = await self.llm_service.generate_with_tools(messages, tools)
+            except Exception as tool_error:
+                # If tool calling fails (e.g., Groq doesn't support it), fall back to regular generation
+                import logging
+                _logger = logging.getLogger(__name__)
+                _logger.warning(f"Tool calling failed, falling back to regular generation: {tool_error}")
+                response = await self.llm_service.generate(messages)
+                response = AIMessage(content=response)
         else:
             response = await self.llm_service.generate(messages)
             response = AIMessage(content=response)
@@ -262,8 +271,11 @@ Guidelines:
         }
         
         config = config or {}
-        if thread_id:
-            config["configurable"] = {"thread_id": thread_id}
+        # Checkpointer requires thread_id - generate one if not provided
+        if not thread_id:
+            thread_id = str(uuid.uuid4())
+        
+        config["configurable"] = {"thread_id": thread_id}
         
         # Run the graph
         final_state = await self.graph.ainvoke(initial_state, config)
@@ -299,8 +311,11 @@ Guidelines:
         }
         
         config = {}
-        if thread_id:
-            config["configurable"] = {"thread_id": thread_id}
+        # Checkpointer requires thread_id - generate one if not provided
+        if not thread_id:
+            thread_id = str(uuid.uuid4())
+        
+        config["configurable"] = {"thread_id": thread_id}
         
         async for event in self.graph.astream(initial_state, config):
             yield event

@@ -1,4 +1,4 @@
-"""Enhanced LLM Service with multi-provider support (OpenAI, Vertex AI, AWS Bedrock)"""
+"""Enhanced LLM Service with multi-provider support (OpenAI, Groq, Vertex AI, AWS Bedrock)"""
 from typing import Optional, List, Dict, Any, AsyncIterator
 from langchain_openai import ChatOpenAI
 from langchain_core.language_models import BaseChatModel
@@ -24,7 +24,7 @@ except ImportError:
 
 
 class LLMService:
-    """Multi-provider LLM service supporting OpenAI, Vertex AI, and AWS Bedrock"""
+    """Multi-provider LLM service supporting OpenAI, Groq, Vertex AI, and AWS Bedrock"""
     
     def __init__(self, provider: Optional[LLMProvider] = None):
         self.provider = provider or settings.LLM_PROVIDER
@@ -41,7 +41,19 @@ class LLMService:
     
     def _initialize_llm(self) -> BaseChatModel:
         """Initialize LLM based on provider"""
-        if self.provider == LLMProvider.OPENAI:
+        if self.provider == LLMProvider.GROQ:
+            if not settings.GROQ_API_KEY:
+                raise ValueError("GROQ_API_KEY is required for Groq provider")
+            # Groq uses OpenAI-compatible API
+            return ChatOpenAI(
+                model=settings.GROQ_MODEL,
+                temperature=0.7,
+                streaming=True,
+                api_key=settings.GROQ_API_KEY,
+                base_url="https://api.groq.com/openai/v1"
+            )
+        
+        elif self.provider == LLMProvider.OPENAI:
             if not settings.OPENAI_API_KEY:
                 raise ValueError("OPENAI_API_KEY is required for OpenAI provider")
             return ChatOpenAI(
@@ -138,7 +150,9 @@ class LLMService:
     
     def get_model_name(self) -> str:
         """Get the current model name"""
-        if self.provider == LLMProvider.OPENAI:
+        if self.provider == LLMProvider.GROQ:
+            return settings.GROQ_MODEL
+        elif self.provider == LLMProvider.OPENAI:
             return settings.OPENAI_MODEL
         elif self.provider == LLMProvider.VERTEX_AI:
             return settings.VERTEX_AI_MODEL

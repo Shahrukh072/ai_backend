@@ -11,9 +11,16 @@ class OAuthService:
     def __init__(self, db: Session):
         self.db = db
         self.google_client_id = settings.GOOGLE_OAUTH_CLIENT_ID
+        if not self.google_client_id:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error("GOOGLE_OAUTH_CLIENT_ID is not configured in settings")
 
     def verify_google_token(self, token: str) -> Optional[Dict]:
         """Verify Google ID token and return user info"""
+        if not self.google_client_id:
+            print("ERROR: google_client_id is None in OAuthService")
+            return None
         try:
             # Verify the token
             idinfo = id_token.verify_oauth2_token(

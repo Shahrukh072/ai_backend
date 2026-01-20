@@ -1,14 +1,40 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import model_validator
 from typing import List, Literal, Optional
 from enum import Enum
+import os
+from pathlib import Path
 
 
 class LLMProvider(str, Enum):
     """Supported LLM providers"""
     OPENAI = "openai"
+    GROQ = "groq"
     VERTEX_AI = "vertex_ai"
     AWS_BEDROCK = "aws_bedrock"
+
+
+# Find .env file - check multiple locations before creating Settings
+_config_dir = Path(__file__).parent.parent  # Project root (where app/ is)
+_env_paths = [
+    Path(".env"),  # Current working directory
+    _config_dir / ".env",  # Project root
+    Path.cwd() / ".env",  # Explicit current working directory
+]
+
+_env_file_path = None
+for path in _env_paths:
+    if path.exists():
+        _env_file_path = str(path.resolve())
+        print(f"✅ Found .env file at: {path.absolute()}")
+        break
+
+if not _env_file_path:
+    print(f"⚠️  Warning: .env file not found in any of these locations:")
+    for path in _env_paths:
+        print(f"   - {path.absolute()}")
+    print(f"   Current working directory: {os.getcwd()}")
+    _env_file_path = ".env"  # Default fallback
 
 
 class Settings(BaseSettings):
@@ -33,13 +59,24 @@ class Settings(BaseSettings):
     APP_BASE_URL: Optional[str] = None  # Base URL for constructing redirect URI
     
     # LLM Provider Selection
-    LLM_PROVIDER: LLMProvider = LLMProvider.OPENAI
+    LLM_PROVIDER: LLMProvider = LLMProvider.GROQ  # Set Groq as primary provider
     
     # OpenAI Configuration
     OPENAI_API_KEY: Optional[str] = None
     OPENAI_MODEL: str = "gpt-4o"
     OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-large"
     OPENAI_EMBEDDING_DIMENSION: int = 3072
+    
+    # Groq Configuration
+    GROQ_API_KEY: Optional[str] = None
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"  # Default Groq model
+    GROQ_EMBEDDING_MODEL: str = "text-embedding-3-large"  # Uses OpenAI embeddings
+    GROQ_EMBEDDING_DIMENSION: int = 3072
+    
+    # Embedding Configuration (used by all providers for RAG)
+    # For Groq, we use OpenAI embeddings since Groq doesn't provide embeddings
+    EMBEDDING_MODEL: str = "text-embedding-3-large"  # Default embedding model
+    EMBEDDING_DIMENSION: int = 3072  # Default embedding dimension
     
     # Vertex AI Configuration
     GOOGLE_CLOUD_PROJECT: Optional[str] = None
@@ -104,6 +141,13 @@ class Settings(BaseSettings):
     LLM_EVAL_ENABLED: bool = True
     LLM_EVAL_MODEL: str = "gpt-4o-mini"
     
+    model_config = SettingsConfigDict(
+        env_file=_env_file_path,
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+        extra="ignore"
+    )
+    
     @model_validator(mode='after')
     def validate_redirect_uri(self):
         """Validate and set GOOGLE_OAUTH_REDIRECT_URI based on ENV and APP_BASE_URL"""
@@ -120,11 +164,16 @@ class Settings(BaseSettings):
                         "Set it via environment variable or APP_BASE_URL."
                     )
         return self
-    
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
 
 
+# Create Settings instance (uses _env_file_path found above)
 settings = Settings()
+
+# Debug: Print Google OAuth configuration status
+print(f"\n🔍 Google OAuth Configuration Status:")
+print(f"   GOOGLE_OAUTH_CLIENT_ID: {'✅ SET' if settings.GOOGLE_OAUTH_CLIENT_ID else '❌ NOT SET'}")
+if settings.GOOGLE_OAUTH_CLIENT_ID:
+    print(f"   Value: {settings.GOOGLE_OAUTH_CLIENT_ID[:30]}...")
+print(f"   GOOGLE_OAUTH_CLIENT_SECRET: {'✅ SET' if settings.GOOGLE_OAUTH_CLIENT_SECRET else '❌ NOT SET'}")
+print(f"   APP_BASE_URL: {settings.APP_BASE_URL or 'NOT SET'}\n")
 

@@ -58,16 +58,26 @@ export default function Upload() {
     setSuccess('');
 
     try {
-      await documentService.uploadDocument(file);
+      const result = await documentService.uploadDocument(file);
       setSuccess('Document uploaded successfully!');
       setFile(null);
+      setUploading(false);
       // Reset file input
       const fileInput = document.getElementById('file-input');
       if (fileInput) fileInput.value = '';
-      loadDocuments();
+      // Reload documents list
+      await loadDocuments();
+      // Navigate to chat page after a short delay to show success message
+      setTimeout(() => {
+        navigate('/chat', { replace: true });
+      }, 1500);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Upload failed. Please try again.');
-    } finally {
+      console.error('Upload error:', err);
+      const errorMessage = err.response?.data?.detail || 
+                          err.response?.data?.message || 
+                          err.message || 
+                          'Upload failed. Please try again.';
+      setError(errorMessage);
       setUploading(false);
     }
   };
@@ -103,6 +113,23 @@ export default function Upload() {
       minute: '2-digit',
     });
   };
+
+  // Prevent blank screen on errors
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">Please log in to upload documents</p>
+          <button
+            onClick={() => navigate('/login')}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -13,7 +13,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleReady, setGoogleReady] = useState(false);
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const googleButtonRef = useRef(null);
 
@@ -22,15 +22,16 @@ export default function Login() {
     setGoogleLoading(true);
 
     try {
-      await authService.loginWithGoogle(response.credential);
-      // Auth context will be updated automatically via getCurrentUser in useEffect
-      navigate('/chat');
-      setGoogleLoading(false);
+      // Use AuthContext's loginWithGoogle to properly update user state
+      await loginWithGoogle(response.credential);
+      // Navigate immediately - ProtectedRoute will check user state
+      navigate('/chat', { replace: true });
     } catch (err) {
-      setError(err.response?.data?.detail || 'Google sign-in failed. Please try again.');
+      console.error('Google sign-in error:', err);
+      setError(err.response?.data?.detail || err.message || 'Google sign-in failed. Please try again.');
       setGoogleLoading(false);
     }
-  }, [navigate]);
+  }, [navigate, loginWithGoogle]);
 
   const triggerGoogleSignIn = useCallback(() => {
     if (window.google && GOOGLE_CLIENT_ID) {

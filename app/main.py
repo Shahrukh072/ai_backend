@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.api.routes import auth, rag, chat, health
+from app.routers import documents
 
 app = FastAPI(
     title="AI Backend - Production LLM/GenAI Platform",
@@ -23,4 +24,5 @@ app.include_router(health.router, tags=["health"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(rag.router, prefix="/api/rag", tags=["rag"])
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
+app.include_router(documents.router, prefix="/api/documents", tags=["documents"])
 

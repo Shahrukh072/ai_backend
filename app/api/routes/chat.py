@@ -282,7 +282,15 @@ async def create_agent_chat(
         import logging
         logger = logging.getLogger(__name__)
         logger.exception(f"Error in agent workflow: {e}")
+        
+        # Provide more helpful error messages
+        error_detail = str(e)
+        if "Failed to call a function" in error_detail or "function" in error_detail.lower():
+            error_detail = "The AI service encountered an issue with tool calling. Please try again or rephrase your question."
+        elif "quota" in error_detail.lower() or "429" in error_detail:
+            error_detail = "API quota exceeded. Please check your API key or try again later."
+        
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            detail=error_detail
         )

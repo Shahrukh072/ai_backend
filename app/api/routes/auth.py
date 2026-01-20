@@ -66,7 +66,11 @@ async def debug_config():
     return {
         "secret_key_length": len(settings.SECRET_KEY),
         "algorithm": settings.ALGORITHM,
-        "token_expire_minutes": settings.ACCESS_TOKEN_EXPIRE_MINUTES
+        "token_expire_minutes": settings.ACCESS_TOKEN_EXPIRE_MINUTES,
+        "google_oauth_configured": bool(settings.GOOGLE_OAUTH_CLIENT_ID),
+        "google_oauth_client_id": settings.GOOGLE_OAUTH_CLIENT_ID if settings.GOOGLE_OAUTH_CLIENT_ID else None,
+        "google_oauth_client_secret": "***" if settings.GOOGLE_OAUTH_CLIENT_SECRET else None,
+        "app_base_url": settings.APP_BASE_URL
     }
 
 

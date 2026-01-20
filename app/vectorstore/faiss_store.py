@@ -15,7 +15,10 @@ class FAISSService:
         self.index_path = settings.FAISS_INDEX_PATH
         # Get dimension based on provider
         provider = settings.LLM_PROVIDER
-        if provider == LLMProvider.OPENAI:
+        if provider == LLMProvider.GROQ:
+            # Groq uses OpenAI embeddings
+            self.dimension = getattr(settings, 'EMBEDDING_DIMENSION', settings.OPENAI_EMBEDDING_DIMENSION)
+        elif provider == LLMProvider.OPENAI:
             self.dimension = settings.OPENAI_EMBEDDING_DIMENSION
         elif provider == LLMProvider.VERTEX_AI:
             self.dimension = settings.VERTEX_AI_EMBEDDING_DIMENSION

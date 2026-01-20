@@ -70,9 +70,15 @@ export const AuthProvider = ({ children }) => {
 
   const loginWithGoogle = async (googleToken) => {
     try {
+      // First, get the token from Google auth
       const data = await authService.loginWithGoogle(googleToken);
+      
+      // Then fetch user data
       const userData = await authService.getCurrentUser();
+      
+      // Update user state
       setUser(userData);
+      
       return data;
     } catch (error) {
       // Rollback token on error

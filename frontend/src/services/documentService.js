@@ -5,11 +5,20 @@ export const documentService = {
     if (!file || !(file instanceof File || file instanceof Blob)) {
       throw new Error('Invalid file: file must be a File or Blob object');
     }
+    
+    // Validate file before upload
+    if (file.size === 0) {
+      throw new Error('File is empty');
+    }
+    
     const formData = new FormData();
     formData.append('file', file);
     
-    // Don't set Content-Type header - let axios set it with boundary
-    const response = await api.post('/api/rag/upload', formData);
+    // Don't set Content-Type header - let browser/axios set it with boundary
+    // The api interceptor will handle removing the default Content-Type for FormData
+    const response = await api.post('/api/rag/upload', formData, {
+      timeout: 120000, // 2 minutes timeout for large files
+    });
     return response.data;
   },
 

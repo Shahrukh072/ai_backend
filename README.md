@@ -60,6 +60,11 @@ DATABASE_URL=postgresql+psycopg://postgres:password@localhost:5432/ai_backend
 SECRET_KEY=your-secret-key-here
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 
+# Google OAuth (optional - see docs/GOOGLE_OAUTH_SETUP.md)
+GOOGLE_OAUTH_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_OAUTH_CLIENT_SECRET=your-client-secret
+APP_BASE_URL=http://localhost:3000
+
 # LLM Provider (choose one)
 LLM_PROVIDER=openai  # or vertex_ai or aws_bedrock
 
@@ -186,7 +191,10 @@ The system uses LangGraph to create stateful agent workflows:
 ### Authentication
 - `POST /api/auth/register` - Register new user
 - `POST /api/auth/login` - Login and get token
+- `POST /api/auth/google` - Google OAuth authentication
 - `GET /api/auth/me` - Get current user
+
+**📘 Google OAuth Setup**: See [GOOGLE_OAUTH_SETUP.md](docs/GOOGLE_OAUTH_SETUP.md) for detailed step-by-step instructions on configuring Google authentication.
 
 ### Documents
 - `POST /api/documents/upload` - Upload document

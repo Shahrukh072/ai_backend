@@ -1,5 +1,5 @@
 from openai import AsyncOpenAI
-from app.config import settings
+from app.config import settings, LLMProvider
 from typing import List
 import numpy as np
 import logging
@@ -9,9 +9,25 @@ logger = logging.getLogger(__name__)
 
 class EmbeddingService:
     def __init__(self):
-        self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-        self.model = settings.OPENAI_EMBEDDING_MODEL
-        self.dimension = settings.OPENAI_EMBEDDING_DIMENSION
+        # For embeddings, we use OpenAI API (works with Groq setup since Groq doesn't have embeddings)
+        # If using Groq, we still need OPENAI_API_KEY for embeddings
+        embedding_api_key = settings.OPENAI_API_KEY
+        if not embedding_api_key and settings.LLM_PROVIDER == LLMProvider.GROQ:
+            # For Groq, we can optionally use Groq API key with OpenAI-compatible endpoint
+            # But OpenAI embeddings are recommended for now
+            embedding_api_key = getattr(settings, 'GROQ_API_KEY', None)
+        
+        if not embedding_api_key:
+            raise ValueError(
+                "OPENAI_API_KEY is required for embeddings. "
+                "Even when using Groq, you need OpenAI API key for embeddings. "
+                "Or set GROQ_API_KEY and we'll use it with OpenAI-compatible endpoint."
+            )
+        
+        self.client = AsyncOpenAI(api_key=embedding_api_key)
+        # Use general embedding settings (works for all providers)
+        self.model = getattr(settings, 'EMBEDDING_MODEL', settings.OPENAI_EMBEDDING_MODEL)
+        self.dimension = getattr(settings, 'EMBEDDING_DIMENSION', settings.OPENAI_EMBEDDING_DIMENSION)
     
     async def create_embedding(self, text: str) -> List[float]:
         """Create embedding for a single text"""

@@ -4,6 +4,9 @@ from sqlalchemy.orm import Session
 from langchain_community.vectorstores import FAISS, Chroma
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document
+from app.config import settings, LLMProvider
+import os
 
 # Optional imports for embeddings
 try:
@@ -62,7 +65,15 @@ class EnhancedRAGService:
         """Initialize embeddings based on provider"""
         provider = settings.LLM_PROVIDER
         
-        if provider == LLMProvider.OPENAI:
+        if provider == LLMProvider.GROQ:
+            # Groq doesn't have embeddings, use OpenAI embeddings
+            if not settings.OPENAI_API_KEY:
+                raise ValueError("OPENAI_API_KEY is required for embeddings when using Groq provider")
+            return OpenAIEmbeddings(
+                model=getattr(settings, 'EMBEDDING_MODEL', settings.OPENAI_EMBEDDING_MODEL),
+                api_key=settings.OPENAI_API_KEY
+            )
+        elif provider == LLMProvider.OPENAI:
             return OpenAIEmbeddings(
                 model=settings.OPENAI_EMBEDDING_MODEL,
                 api_key=settings.OPENAI_API_KEY
@@ -118,19 +129,49 @@ class EnhancedRAGService:
                     allow_dangerous_deserialization=False  # Set to False and validate files first
                 )
             except Exception:
-                # If loading fails, create fresh index
-                return FAISS.from_documents([], self.embeddings)
+                # If loading fails, create fresh empty index without API calls
+                return self._create_empty_faiss_store()
         else:
-            # Create empty store with placeholder metadata
-            empty_docs = [
-                Document(
-                    page_content="",
-                    metadata={"is_placeholder": True}
-                )
-            ]
-            store = FAISS.from_documents(empty_docs, self.embeddings)
-            # Remove placeholder immediately
-            return store
+            # Create empty store without making API calls
+            return self._create_empty_faiss_store()
+    
+    def _create_empty_faiss_store(self):
+        """Create an empty FAISS store without making embedding API calls"""
+        import faiss
+        
+        # Get embedding dimension from settings
+        if settings.LLM_PROVIDER == LLMProvider.GROQ:
+            dimension = getattr(settings, 'EMBEDDING_DIMENSION', settings.OPENAI_EMBEDDING_DIMENSION)
+        elif settings.LLM_PROVIDER == LLMProvider.OPENAI:
+            dimension = settings.OPENAI_EMBEDDING_DIMENSION
+        elif settings.LLM_PROVIDER == LLMProvider.VERTEX_AI:
+            dimension = settings.VERTEX_AI_EMBEDDING_DIMENSION
+        elif settings.LLM_PROVIDER == LLMProvider.AWS_BEDROCK:
+            dimension = settings.BEDROCK_EMBEDDING_DIMENSION
+        else:
+            dimension = getattr(settings, 'EMBEDDING_DIMENSION', 3072)
+        
+        # Create empty FAISS index
+        index = faiss.IndexFlatL2(dimension)
+        
+        # Create index files manually to avoid API calls
+        index_path = settings.FAISS_INDEX_PATH
+        index_file = os.path.join(index_path, "index.faiss")
+        pkl_file = os.path.join(index_path, "index.pkl")
+        
+        # Save empty index
+        faiss.write_index(index, index_file)
+        
+        # Save empty metadata (FAISS format)
+        with open(pkl_file, "wb") as f:
+            pickle.dump({"ids": [], "metadatas": []}, f)
+        
+        # Load it back - this won't make API calls since index is already created
+        return FAISS.load_local(
+            index_path,
+            self.embeddings,
+            allow_dangerous_deserialization=True
+        )
     
     def _load_chroma_store(self):
         """Load or create Chroma vector store"""

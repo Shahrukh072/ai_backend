@@ -17,9 +17,43 @@ async def upload_document(
     db: Session = Depends(get_db)
 ):
     """Upload and process a document"""
-    document_service = DocumentLoaderService(db)
-    document = await document_service.upload_and_process(file, current_user.id)
-    return document
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        logger.info(f"Upload request received: filename={file.filename}, size={file.size}, user_id={current_user.id}")
+        
+        if not file.filename:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No file provided"
+            )
+        
+        document_service = DocumentLoaderService(db)
+        document = await document_service.upload_and_process(file, current_user.id)
+        
+        logger.info(f"Document uploaded successfully: id={document.id}, title={document.title}")
+        return document
+    except HTTPException:
+        # Re-raise HTTPExceptions (validation errors, etc.)
+        raise
+    except Exception as e:
+        logger.exception(f"Error uploading document: {e}")
+        error_msg = str(e)
+        # Provide user-friendly error messages
+        if "quota" in error_msg.lower() or "429" in error_msg:
+            detail = (
+                "Document uploaded successfully, but embeddings could not be created due to OpenAI API quota limit. "
+                "The document is saved and can be viewed, but RAG (document search) features will not work. "
+                "To enable RAG, please add a valid OPENAI_API_KEY with available quota."
+            )
+        else:
+            detail = f"Error processing document: {error_msg}"
+        
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=detail
+        )
 
 
 @router.get("/", response_model=List[DocumentResponse])

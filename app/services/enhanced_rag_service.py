@@ -62,7 +62,15 @@ class EnhancedRAGService:
         """Initialize embeddings based on provider"""
         provider = settings.LLM_PROVIDER
         
-        if provider == LLMProvider.OPENAI:
+        if provider == LLMProvider.GROQ:
+            # Groq doesn't have embeddings, use OpenAI embeddings
+            if not settings.OPENAI_API_KEY:
+                raise ValueError("OPENAI_API_KEY is required for embeddings when using Groq provider")
+            return OpenAIEmbeddings(
+                model=getattr(settings, 'EMBEDDING_MODEL', settings.OPENAI_EMBEDDING_MODEL),
+                api_key=settings.OPENAI_API_KEY
+            )
+        elif provider == LLMProvider.OPENAI:
             return OpenAIEmbeddings(
                 model=settings.OPENAI_EMBEDDING_MODEL,
                 api_key=settings.OPENAI_API_KEY
